@@ -4,11 +4,13 @@ from typing import Any, Dict
 import torch
 import torch.nn as nn
 import transformers
+from FlagEmbedding import BGEM3FlagModel
 from sentence_transformers import SentenceTransformer
 
 EMBEDDER_MODEL_NAMES = [
     "bert",
     "bert__random_init",
+    "bge-m3",
     "contriever",
     "dpr",
     "gtr_base",
@@ -164,6 +166,9 @@ def load_embedder_and_tokenizer(name: str, torch_dtype: str, **kwargs):
         tokenizer = model.tokenizer
     elif name == "gtr_large":
         model = SentenceTransformer("sentence-transformers/gtr-t5-large")
+        tokenizer = model.tokenizer
+    elif name == "bge-m3":
+        model = BGEM3FlagModel("BAAI/bge-m3", use_fp16=True)  # Setting use_fp16 to True speeds up computation with a slight performance degradation
         tokenizer = model.tokenizer
     elif name == "ance_tele":
         model = transformers.AutoModel.from_pretrained(

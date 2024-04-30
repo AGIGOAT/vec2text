@@ -1,25 +1,29 @@
+import csv
 import logging
 import os
 import random
+import sys
 from typing import Dict, List
 
 import datasets
-import sys
 import numpy as np
-from datasets import IterableDataset
-import csv
 import torch
+from datasets import IterableDataset
 
 from vec2text.run_args import DataArguments
 from vec2text.utils import dataset_map_multi_worker, get_num_proc
 
+
 def load_text(file_path):
-    csv.field_size_limit(sys.maxsize) 
-    with open(file_path, 'r', encoding='utf-8') as file:
+    csv.field_size_limit(sys.maxsize)
+    with open(file_path, "r", encoding="utf-8") as file:
         csv_reader = csv.reader(file)
         next(csv_reader)  # Skip header if present
         for row in csv_reader:
-            yield {'text': row[2]} # 2 title, 3 text  # Assuming the text is in the fourth column
+            yield {
+                "text": row[2]
+            }  # 2 title, 3 text  # Assuming the text is in the fourth column
+
 
 def load_embeddings(paths):
     # Simulate loading embeddings in sequence from a list of files
@@ -27,6 +31,7 @@ def load_embeddings(paths):
         data = np.load(path)
         for row in data:
             yield torch.tensor(row)  # Directly yield as tensor
+
 
 class CustomIterableDataset(IterableDataset):
     def __init__(self, text_file, embedding_files, batch_size=bs):
@@ -38,7 +43,7 @@ class CustomIterableDataset(IterableDataset):
         text_iter = load_text(self.text_file)
         embeddings_iter = load_embeddings(self.embedding_files)
         return self.batch_iter(zip(text_iter, embeddings_iter), self.batch_size)
-    
+
     def batch_iter(self, iterator, batch_size):
         batch = []
         for item in iterator:
@@ -53,9 +58,14 @@ class CustomIterableDataset(IterableDataset):
         collated_batch = {}
         # Each item in batch is now a tuple of dictionaries where values are tensors
         # Extracting all 'text' and 'embeddings' directly into batches
-        collated_batch['text'] = [item[0]['text'] for item in batch]  # Assuming 'text' yields are still dictionaries
-        collated_batch['embeddings'] = torch.stack([item[1] for item in batch])  # Stack all tensor embeddings into a batch
+        collated_batch["text"] = [
+            item[0]["text"] for item in batch
+        ]  # Assuming 'text' yields are still dictionaries
+        collated_batch["embeddings"] = torch.stack(
+            [item[1] for item in batch]
+        )  # Stack all tensor embeddings into a batch
         return collated_batch
+
 
 def retain_dataset_columns(
     d: datasets.Dataset, allowed_columns: List[str]
@@ -87,8 +97,12 @@ def create_ompi_ex(ex: Dict[str, str]) -> Dict[str, str]:
     ex["suffix"] = ex["user"]
     return ex
 
+
 def load_retriv_wiki_de():
-    return CustomIterableDataset(input_data['text'], input_data['embeddings'], batch_size=4)
+    return CustomIterableDataset(
+        input_data["text"], input_data["embeddings"], batch_size=4
+    )
+
 
 def get_world_size() -> int:
     try:

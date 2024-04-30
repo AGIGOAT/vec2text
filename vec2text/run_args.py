@@ -21,6 +21,7 @@ DATASET_NAMES = [
     "msmarco",
     "one_million_instructions",
     "one_million_paired_instructions",
+    "retriv_wiki_de",
 ]
 
 
